@@ -1422,16 +1422,15 @@ export class ClineProvider
 			const apiKey = await OpenAIAuth.exchangeTokenForApiKey(tokens.id_token)
 
 			// Store in SecretStorage
-			await this.context.secrets.store("openAiChatGptApiKey", apiKey)
-			await this.context.secrets.store("openAiChatGptIdToken", tokens.id_token)
-			await this.context.secrets.store("openAiChatGptRefreshToken", tokens.refresh_token)
-			await this.context.secrets.store("openAiChatGptLastRefresh", new Date().toISOString())
+			await this.context.secrets.store("roo.openai.chatgpt.apiKey", apiKey)
+			await this.context.secrets.store("roo.openai.chatgpt.idToken", tokens.id_token)
+			await this.context.secrets.store("roo.openai.chatgpt.refreshToken", tokens.refresh_token)
+			await this.context.secrets.store("roo.openai.chatgpt.lastRefreshIso", new Date().toISOString())
 
 			// Switch to chatgpt auth mode
 			const { apiConfiguration, currentApiConfigName } = await this.getState()
 			const newConfiguration: ProviderSettings = {
 				...apiConfiguration,
-				apiProvider: "openai",
 				openAiAuthMode: "chatgpt",
 			}
 
@@ -1459,10 +1458,10 @@ export class ClineProvider
 	async handleOpenAISignOut(): Promise<void> {
 		try {
 			// Clear all ChatGPT auth secrets
-			await this.context.secrets.delete("openAiChatGptApiKey")
-			await this.context.secrets.delete("openAiChatGptIdToken")
-			await this.context.secrets.delete("openAiChatGptRefreshToken")
-			await this.context.secrets.delete("openAiChatGptLastRefresh")
+			await this.context.secrets.delete("roo.openai.chatgpt.apiKey")
+			await this.context.secrets.delete("roo.openai.chatgpt.idToken")
+			await this.context.secrets.delete("roo.openai.chatgpt.refreshToken")
+			await this.context.secrets.delete("roo.openai.chatgpt.lastRefreshIso")
 
 			// Switch back to API key mode
 			const { apiConfiguration, currentApiConfigName } = await this.getState()
@@ -1487,7 +1486,7 @@ export class ClineProvider
 
 	async handleOpenAIRefresh(): Promise<void> {
 		try {
-			const refreshToken = await this.context.secrets.get("openAiChatGptRefreshToken")
+			const refreshToken = await this.context.secrets.get("roo.openai.chatgpt.refreshToken")
 			if (!refreshToken) {
 				throw new Error("No refresh token available - please sign in again")
 			}
@@ -1501,10 +1500,10 @@ export class ClineProvider
 			const apiKey = await OpenAIAuth.exchangeTokenForApiKey(tokens.id_token)
 
 			// Update SecretStorage
-			await this.context.secrets.store("openAiChatGptApiKey", apiKey)
-			await this.context.secrets.store("openAiChatGptIdToken", tokens.id_token)
-			await this.context.secrets.store("openAiChatGptRefreshToken", tokens.refresh_token)
-			await this.context.secrets.store("openAiChatGptLastRefresh", new Date().toISOString())
+			await this.context.secrets.store("roo.openai.chatgpt.apiKey", apiKey)
+			await this.context.secrets.store("roo.openai.chatgpt.idToken", tokens.id_token)
+			await this.context.secrets.store("roo.openai.chatgpt.refreshToken", tokens.refresh_token)
+			await this.context.secrets.store("roo.openai.chatgpt.lastRefreshIso", new Date().toISOString())
 
 			vscode.window.showInformationMessage("OpenAI credentials refreshed successfully")
 		} catch (error) {
@@ -1619,18 +1618,18 @@ export class ClineProvider
 
 		// Store credentials
 		if (authData.OPENAI_API_KEY) {
-			await this.context.secrets.store("openAiChatGptApiKey", authData.OPENAI_API_KEY)
+			await this.context.secrets.store("roo.openai.chatgpt.apiKey", authData.OPENAI_API_KEY)
 		}
 
 		if (authData.tokens?.id_token) {
-			await this.context.secrets.store("openAiChatGptIdToken", authData.tokens.id_token)
+			await this.context.secrets.store("roo.openai.chatgpt.idToken", authData.tokens.id_token)
 		}
 
 		if (authData.tokens?.refresh_token) {
-			await this.context.secrets.store("openAiChatGptRefreshToken", authData.tokens.refresh_token)
+			await this.context.secrets.store("roo.openai.chatgpt.refreshToken", authData.tokens.refresh_token)
 		}
 
-		await this.context.secrets.store("openAiChatGptLastRefresh", new Date().toISOString())
+		await this.context.secrets.store("roo.openai.chatgpt.lastRefreshIso", new Date().toISOString())
 
 		// Switch to ChatGPT auth mode
 		const { apiConfiguration, currentApiConfigName } = await this.getState()
