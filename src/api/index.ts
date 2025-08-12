@@ -157,15 +157,19 @@ export async function buildApiHandlerWithAuth(
 ): Promise<ApiHandler> {
 	const { apiProvider, ...options } = configuration
 
-	// For OpenAI provider with ChatGPT auth mode, inject the ChatGPT API key from SecretStorage
+	// For OpenAI providers with ChatGPT auth mode, inject the ChatGPT API key from SecretStorage
 	const authMode = options.openAiAuthMode || "apiKey"
-	if (apiProvider === "openai" && authMode === "chatgpt" && context) {
+	if ((apiProvider === "openai" || apiProvider === "openai-native") && authMode === "chatgpt" && context) {
 		try {
 			const chatGptApiKey = await context.secrets.get("roo.openai.chatgpt.apiKey")
 			if (chatGptApiKey) {
 				// Inject the ChatGPT API key into options
 				const enhancedOptions = { ...options, openAiChatGptApiKey: chatGptApiKey }
-				return new OpenAiHandler(enhancedOptions)
+				if (apiProvider === "openai-native") {
+					return new OpenAiNativeHandler(enhancedOptions)
+				} else {
+					return new OpenAiHandler(enhancedOptions)
+				}
 			}
 		} catch (error) {
 			console.warn("Failed to retrieve ChatGPT API key from SecretStorage:", error)
