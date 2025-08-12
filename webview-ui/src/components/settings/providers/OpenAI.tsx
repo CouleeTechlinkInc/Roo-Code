@@ -111,16 +111,16 @@ export const OpenAI = ({ apiConfiguration, setApiConfigurationField }: OpenAIPro
 						<div className="p-3 bg-vscode-textBlockQuote-background border border-vscode-textBlockQuote-border rounded">
 							<div className="flex items-center gap-2 mb-2">
 								<span className="text-green-500">✓</span>
-								<span className="font-medium">{t("settings:openaiAuth.status.authenticated")}</span>
+								<span className="font-medium">{t("settings:openaiAuth.chatgptAuth.statusAuthenticated")}</span>
 							</div>
 							{chatGptStatus.userEmail && (
 								<div className="text-sm text-vscode-descriptionForeground">
-									{t("settings:openaiAuth.status.email")}: {chatGptStatus.userEmail}
+									{"Email"}: {chatGptStatus.userEmail}
 								</div>
 							)}
 							{chatGptStatus.lastRefresh && (
 								<div className="text-sm text-vscode-descriptionForeground">
-									{t("settings:openaiAuth.status.lastRefresh")}: {new Date(chatGptStatus.lastRefresh).toLocaleString()}
+									{t("settings:openaiAuth.chatgptAuth.lastRefresh")}: {new Date(chatGptStatus.lastRefresh).toLocaleString()}
 								</div>
 							)}
 						</div>
@@ -131,13 +131,13 @@ export const OpenAI = ({ apiConfiguration, setApiConfigurationField }: OpenAIPro
 								onClick={handleRefresh}
 								disabled={isAuthLoading}
 							>
-								{isAuthLoading ? t("settings:openaiAuth.actions.refreshing") : t("settings:openaiAuth.actions.refresh")}
+								{isAuthLoading ? t("settings:openaiAuth.chatgptAuth.refreshingButton") : t("settings:openaiAuth.chatgptAuth.refreshButton")}
 							</VSCodeButton>
 							<VSCodeButton
 								appearance="secondary"
 								onClick={handleSignOut}
 							>
-								{showSignOutConfirm ? t("settings:openaiAuth.actions.confirmSignOut") : t("settings:openaiAuth.actions.signOut")}
+								{showSignOutConfirm ? t("settings:openaiAuth.chatgptAuth.signOutConfirmButton") : t("settings:openaiAuth.chatgptAuth.signOutButton")}
 							</VSCodeButton>
 						</div>
 					</>
@@ -154,7 +154,7 @@ export const OpenAI = ({ apiConfiguration, setApiConfigurationField }: OpenAIPro
 								onClick={handleSignIn}
 								disabled={isAuthLoading}
 							>
-								{isAuthLoading ? t("settings:openaiAuth.actions.signingIn") : t("settings:openaiAuth.actions.signIn")}
+								{isAuthLoading ? t("settings:openaiAuth.chatgptAuth.signingInButton") : t("settings:openaiAuth.chatgptAuth.signInButton")}
 							</VSCodeButton>
 							
 							<VSCodeButton
@@ -162,11 +162,11 @@ export const OpenAI = ({ apiConfiguration, setApiConfigurationField }: OpenAIPro
 								onClick={handleImportFromCodex}
 								disabled={isAuthLoading}
 							>
-								{t("settings:openaiAuth.actions.importFromCodex")}
+								{t("settings:openaiAuth.chatgptAuth.importFromCodexButton")}
 							</VSCodeButton>
 							
 							<div className="text-xs text-vscode-descriptionForeground mt-1">
-								{t("settings:openaiAuth.info.importInfo")}
+								{"Import your existing Codex CLI credentials"}
 							</div>
 						</div>
 					</>

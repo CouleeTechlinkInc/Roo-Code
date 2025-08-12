@@ -2659,51 +2659,22 @@ export const webviewMessageHandler = async (
 		}
 
 		case "openaiSignInChatGPT": {
-			// TODO: Implement OAuth flow as per PRP
-			// This would trigger the local server + browser OAuth flow
-			provider.log("ChatGPT sign-in not yet implemented")
-			vscode.window.showInformationMessage("ChatGPT authentication will be implemented in a future update")
+			await provider.handleOpenAISignIn()
 			break
 		}
 
 		case "openaiSignOutChatGPT": {
-			try {
-				// Clear all ChatGPT-related secrets
-				await provider.context.secrets.delete("roo.openai.chatgpt.idToken")
-				await provider.context.secrets.delete("roo.openai.chatgpt.apiKey")
-				await provider.context.secrets.delete("roo.openai.chatgpt.refreshToken")
-				await provider.context.secrets.delete("roo.openai.chatgpt.lastRefreshIso")
-
-				await provider.postMessageToWebview({
-					type: "openAiChatGptSignOutSuccess",
-				})
-
-				provider.log("ChatGPT credentials cleared successfully")
-			} catch (error) {
-				provider.log(`Error signing out of ChatGPT: ${error}`)
-				vscode.window.showErrorMessage("Failed to sign out of ChatGPT")
-			}
+			await provider.handleOpenAISignOut()
 			break
 		}
 
 		case "openaiRefreshCredentials": {
-			// TODO: Implement token refresh as per PRP
-			// This would use the refresh token to get new tokens
-			provider.log("ChatGPT credential refresh not yet implemented")
-			vscode.window.showInformationMessage("Credential refresh will be implemented in a future update")
+			await provider.handleOpenAIRefresh()
 			break
 		}
 
 		case "openaiImportFromCodex": {
-			try {
-				// TODO: Implement Codex CLI import as per PRP
-				// This would either read ~/.codex/auth.json or show a paste dialog
-				provider.log("Codex CLI import not yet implemented")
-				vscode.window.showInformationMessage("Codex CLI import will be implemented in a future update")
-			} catch (error) {
-				provider.log(`Error importing from Codex CLI: ${error}`)
-				vscode.window.showErrorMessage("Failed to import credentials from Codex CLI")
-			}
+			await provider.handleCodexImport()
 			break
 		}
 	}
