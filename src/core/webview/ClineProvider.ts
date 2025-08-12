@@ -1442,8 +1442,7 @@ export class ClineProvider
 
 			// Update UI
 			this.postMessageToWebview({
-				type: "action",
-				action: "openAIAuthSuccess",
+				type: "openAiChatGptAuthSuccess",
 			})
 
 			vscode.window.showInformationMessage("Successfully signed in with ChatGPT! You can now use OpenAI models.")
@@ -1476,8 +1475,7 @@ export class ClineProvider
 
 			// Update UI
 			this.postMessageToWebview({
-				type: "action",
-				action: "openAISignOutSuccess",
+				type: "openAiChatGptSignOutSuccess",
 			})
 
 			vscode.window.showInformationMessage("Signed out of ChatGPT successfully")

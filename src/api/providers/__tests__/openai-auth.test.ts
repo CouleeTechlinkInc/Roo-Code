@@ -4,8 +4,12 @@ import { OpenAIAuth } from "../openai-auth"
 import { generatePKCEChallenge } from "../../../utils/oauth/pkce"
 
 // Mock axios
-vi.mock("axios")
-const mockedAxios = vi.mocked(axios)
+vi.mock("axios", () => ({
+	default: {
+		post: vi.fn(),
+		isAxiosError: vi.fn()
+	}
+}))
 
 describe("OpenAI Authentication", () => {
 	beforeEach(() => {
@@ -57,7 +61,7 @@ describe("OpenAI Authentication", () => {
 				},
 			}
 
-			mockedAxios.post.mockResolvedValueOnce(mockResponse)
+			vi.mocked(axios.post).mockResolvedValueOnce(mockResponse)
 
 			const result = await OpenAIAuth.exchangeCodeForTokens(
 				"test-code",
@@ -66,7 +70,7 @@ describe("OpenAI Authentication", () => {
 			)
 
 			expect(result).toEqual(mockResponse.data)
-			expect(mockedAxios.post).toHaveBeenCalledWith(
+			expect(axios.post).toHaveBeenCalledWith(
 				"https://auth.openai.com/oauth/token",
 				{
 					grant_type: "authorization_code",
@@ -94,8 +98,8 @@ describe("OpenAI Authentication", () => {
 				},
 			}
 
-			mockedAxios.post.mockRejectedValueOnce(mockError)
-			mockedAxios.isAxiosError.mockReturnValueOnce(true)
+			vi.mocked(axios.post).mockRejectedValueOnce(mockError)
+			vi.mocked(axios.isAxiosError).mockReturnValueOnce(true)
 
 			await expect(OpenAIAuth.exchangeCodeForTokens("invalid-code", "verifier", "redirect-uri")).rejects.toThrow(
 				"Token exchange failed: Code has expired",
@@ -110,7 +114,7 @@ describe("OpenAI Authentication", () => {
 				},
 			}
 
-			mockedAxios.post.mockResolvedValueOnce(mockResponse)
+			vi.mocked(axios.post).mockResolvedValueOnce(mockResponse)
 
 			await expect(OpenAIAuth.exchangeCodeForTokens("test-code", "verifier", "redirect-uri")).rejects.toThrow(
 				"Failed to exchange authorization code for tokens",
@@ -126,12 +130,12 @@ describe("OpenAI Authentication", () => {
 				},
 			}
 
-			mockedAxios.post.mockResolvedValueOnce(mockResponse)
+			vi.mocked(axios.post).mockResolvedValueOnce(mockResponse)
 
 			const result = await OpenAIAuth.exchangeTokenForApiKey("id-token-123")
 
 			expect(result).toBe("sk-api-key-123")
-			expect(mockedAxios.post).toHaveBeenCalledWith(
+			expect(axios.post).toHaveBeenCalledWith(
 				"https://auth.openai.com/oauth/token",
 				{
 					grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
@@ -154,11 +158,11 @@ describe("OpenAI Authentication", () => {
 				data: { access_token: "sk-api-key-123" },
 			}
 
-			mockedAxios.post.mockResolvedValueOnce(mockResponse)
+			vi.mocked(axios.post).mockResolvedValueOnce(mockResponse)
 
 			await OpenAIAuth.exchangeTokenForApiKey("id-token-123", "CustomClient")
 
-			expect(mockedAxios.post).toHaveBeenCalledWith(
+			expect(axios.post).toHaveBeenCalledWith(
 				expect.any(String),
 				expect.objectContaining({
 					client_id: "CustomClient",
@@ -178,8 +182,8 @@ describe("OpenAI Authentication", () => {
 				},
 			}
 
-			mockedAxios.post.mockRejectedValueOnce(mockError)
-			mockedAxios.isAxiosError.mockReturnValueOnce(true)
+			vi.mocked(axios.post).mockRejectedValueOnce(mockError)
+			vi.mocked(axios.isAxiosError).mockReturnValueOnce(true)
 
 			await expect(OpenAIAuth.exchangeTokenForApiKey("invalid-token")).rejects.toThrow(
 				"API key exchange failed. This may occur if",
@@ -194,8 +198,8 @@ describe("OpenAI Authentication", () => {
 				},
 			}
 
-			mockedAxios.post.mockRejectedValueOnce(mockError)
-			mockedAxios.isAxiosError.mockReturnValueOnce(true)
+			vi.mocked(axios.post).mockRejectedValueOnce(mockError)
+			vi.mocked(axios.isAxiosError).mockReturnValueOnce(true)
 
 			await expect(OpenAIAuth.exchangeTokenForApiKey("expired-token")).rejects.toThrow(
 				"Authentication failed. Please try signing in again.",
@@ -213,12 +217,12 @@ describe("OpenAI Authentication", () => {
 				},
 			}
 
-			mockedAxios.post.mockResolvedValueOnce(mockResponse)
+			vi.mocked(axios.post).mockResolvedValueOnce(mockResponse)
 
 			const result = await OpenAIAuth.refreshTokens("refresh-token-123")
 
 			expect(result).toEqual(mockResponse.data)
-			expect(mockedAxios.post).toHaveBeenCalledWith(
+			expect(axios.post).toHaveBeenCalledWith(
 				"https://auth.openai.com/oauth/token",
 				{
 					grant_type: "refresh_token",
@@ -245,8 +249,8 @@ describe("OpenAI Authentication", () => {
 				},
 			}
 
-			mockedAxios.post.mockRejectedValueOnce(mockError)
-			mockedAxios.isAxiosError.mockReturnValueOnce(true)
+			vi.mocked(axios.post).mockRejectedValueOnce(mockError)
+			vi.mocked(axios.isAxiosError).mockReturnValueOnce(true)
 
 			await expect(OpenAIAuth.refreshTokens("expired-refresh-token")).rejects.toThrow(
 				"Refresh token is invalid or expired. Please sign in again.",
@@ -257,12 +261,12 @@ describe("OpenAI Authentication", () => {
 	describe("redeemCredits", () => {
 		it("should silently handle credit redemption success", async () => {
 			const mockResponse = { data: { success: true } }
-			mockedAxios.post.mockResolvedValueOnce(mockResponse)
+			vi.mocked(axios.post).mockResolvedValueOnce(mockResponse)
 
 			// Should not throw even if successful
 			await expect(OpenAIAuth.redeemCredits("id-token-123")).resolves.toBeUndefined()
 
-			expect(mockedAxios.post).toHaveBeenCalledWith(
+			expect(axios.post).toHaveBeenCalledWith(
 				"https://api.openai.com/v1/billing/redeem_credits",
 				{},
 				{
@@ -276,7 +280,7 @@ describe("OpenAI Authentication", () => {
 
 		it("should silently handle credit redemption failure", async () => {
 			const mockError = new Error("Credit redemption failed")
-			mockedAxios.post.mockRejectedValueOnce(mockError)
+			vi.mocked(axios.post).mockRejectedValueOnce(mockError)
 
 			// Should not throw even if failed (best-effort)
 			await expect(OpenAIAuth.redeemCredits("id-token-123")).resolves.toBeUndefined()

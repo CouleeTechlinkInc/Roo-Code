@@ -39,7 +39,8 @@ export class OpenAiHandler extends BaseProvider implements SingleCompletionHandl
 
 		// Determine API key based on authentication mode
 		let apiKey: string
-		if (this.options.openAiAuthMode === "chatgpt") {
+		const authMode = this.options.openAiAuthMode || "apiKey"
+		if (authMode === "chatgpt") {
 			// Use ChatGPT-specific API key from options (injected by buildApiHandlerWithAuth)
 			apiKey = this.options.openAiChatGptApiKey ?? "not-provided"
 		} else {

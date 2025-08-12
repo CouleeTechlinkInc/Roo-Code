@@ -59,7 +59,8 @@ export class OpenAiNativeHandler extends BaseProvider implements SingleCompletio
 
 		// Determine API key based on authentication mode
 		let apiKey: string
-		if (this.options.openAiAuthMode === "chatgpt") {
+		const authMode = this.options.openAiAuthMode || "apiKey"
+		if (authMode === "chatgpt") {
 			// Use ChatGPT-specific API key from SecretStorage
 			apiKey = this.options.openAiChatGptApiKey ?? "not-provided"
 		} else {

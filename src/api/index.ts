@@ -158,7 +158,8 @@ export async function buildApiHandlerWithAuth(
 	const { apiProvider, ...options } = configuration
 
 	// For OpenAI provider with ChatGPT auth mode, inject the ChatGPT API key from SecretStorage
-	if (apiProvider === "openai" && options.openAiAuthMode === "chatgpt" && context) {
+	const authMode = options.openAiAuthMode || "apiKey"
+	if (apiProvider === "openai" && authMode === "chatgpt" && context) {
 		try {
 			const chatGptApiKey = await context.secrets.get("roo.openai.chatgpt.apiKey")
 			if (chatGptApiKey) {

@@ -148,8 +148,7 @@ const openAiSchema = baseProviderSettingsSchema.extend({
 	openAiApiKey: z.string().optional(),
 	openAiAuthMode: z
 		.union([z.literal("apiKey"), z.literal("chatgpt")])
-		.optional()
-		.default("apiKey"),
+		.optional(),
 	openAiLegacyFormat: z.boolean().optional(),
 	openAiR1FormatEnabled: z.boolean().optional(),
 	openAiModelId: z.string().optional(),
