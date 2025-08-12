@@ -216,6 +216,9 @@ export interface WebviewMessage {
 		| "openaiSignOutChatGPT"
 		| "openaiRefreshCredentials"
 		| "openaiImportFromCodex"
+		| "openaiProPlusImportFromCodex"
+		| "openaiProPlusImportFromCodexComplete"
+		| "openaiProPlusValidateTokens"
 	text?: string
 	editedMessageContent?: string
 	tab?: "settings" | "history" | "mcp" | "modes" | "chat" | "marketplace" | "account"

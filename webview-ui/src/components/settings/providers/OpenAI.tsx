@@ -1,13 +1,12 @@
 import { useCallback, useState, useEffect } from "react"
 import { Checkbox } from "vscrui"
-import { VSCodeTextField, VSCodeDropdown, VSCodeOption, VSCodeButton } from "@vscode/webview-ui-toolkit/react"
+import { VSCodeTextField, VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 
 import type { ProviderSettings } from "@roo-code/types"
 
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { VSCodeButtonLink } from "@src/components/common/VSCodeButtonLink"
 import { vscode } from "@src/utils/vscode"
-import type { OpenAiChatGptStatusPayload } from "@roo/ExtensionMessage"
 
 import { inputEventTransform } from "../transforms"
 
@@ -23,38 +22,8 @@ export const OpenAI = ({ apiConfiguration, setApiConfigurationField }: OpenAIPro
 		!!apiConfiguration?.openAiNativeBaseUrl,
 	)
 
-	// ChatGPT authentication state
-	const [authMode, setAuthMode] = useState<"apiKey" | "chatgpt">(apiConfiguration?.openAiAuthMode || "apiKey")
-	const [chatGptStatus, setChatGptStatus] = useState<OpenAiChatGptStatusPayload>({
-		authenticated: false,
-	})
+	// Simple loading state for Codex import
 	const [isAuthLoading, setIsAuthLoading] = useState(false)
-	const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
-
-	// Check ChatGPT auth status on mount and auth mode change
-	useEffect(() => {
-		if (authMode === "chatgpt") {
-			vscode.postMessage({ type: "requestOpenAIChatGptStatus" })
-		}
-	}, [authMode])
-
-	// Listen for auth status updates
-	useEffect(() => {
-		const handleMessage = (event: MessageEvent) => {
-			const message = event.data
-			if (message.type === "openAiChatGptStatus") {
-				setChatGptStatus(message.payload || { authenticated: false })
-				setIsAuthLoading(false)
-			} else if (message.type === "openAiChatGptAuthSuccess") {
-				vscode.postMessage({ type: "requestOpenAIChatGptStatus" })
-			} else if (message.type === "openAiChatGptSignOutSuccess") {
-				setChatGptStatus({ authenticated: false })
-			}
-		}
-
-		window.addEventListener("message", handleMessage)
-		return () => window.removeEventListener("message", handleMessage)
-	}, [])
 
 	const handleInputChange = useCallback(
 		<K extends keyof ProviderSettings, E>(
@@ -67,171 +36,77 @@ export const OpenAI = ({ apiConfiguration, setApiConfigurationField }: OpenAIPro
 		[setApiConfigurationField],
 	)
 
-	const handleAuthModeChange = (newMode: "apiKey" | "chatgpt") => {
-		setAuthMode(newMode)
-		setApiConfigurationField("openAiAuthMode", newMode)
-	}
-
-	const handleSignIn = () => {
-		setIsAuthLoading(true)
-		vscode.postMessage({ type: "openaiSignInChatGPT" })
-	}
-
-	const handleSignOut = () => {
-		if (showSignOutConfirm) {
-			vscode.postMessage({ type: "openaiSignOutChatGPT" })
-			setShowSignOutConfirm(false)
-		} else {
-			setShowSignOutConfirm(true)
-			setTimeout(() => setShowSignOutConfirm(false), 3000)
+	// Listen for import completion
+	useEffect(() => {
+		const handleMessage = (event: MessageEvent) => {
+			const message = event.data
+			if (message.type === "openaiImportFromCodexComplete") {
+				setIsAuthLoading(false)
+			}
 		}
-	}
 
-	const handleRefresh = () => {
-		setIsAuthLoading(true)
-		vscode.postMessage({ type: "openaiRefreshCredentials" })
-	}
+		window.addEventListener("message", handleMessage)
+		return () => window.removeEventListener("message", handleMessage)
+	}, [])
 
 	const handleImportFromCodex = () => {
+		setIsAuthLoading(true)
 		vscode.postMessage({ type: "openaiImportFromCodex" })
-	}
-
-	// Render ChatGPT authentication UI
-	const renderChatGptAuth = () => {
-		return (
-			<div className="flex flex-col gap-3">
-				<div className="text-sm text-vscode-descriptionForeground">
-					{t("settings:openaiAuth.chatgptAuth.description")}
-				</div>
-
-				{chatGptStatus?.authenticated ? (
-					<>
-						<div className="p-3 bg-vscode-textBlockQuote-background border border-vscode-textBlockQuote-border rounded">
-							<div className="flex items-center gap-2 mb-2">
-								<span className="text-green-500">✓</span>
-								<span className="font-medium">
-									{t("settings:openaiAuth.chatgptAuth.statusAuthenticated")}
-								</span>
-							</div>
-							{chatGptStatus.userEmail && (
-								<div className="text-sm text-vscode-descriptionForeground">
-									{"Email"}: {chatGptStatus.userEmail}
-								</div>
-							)}
-							{chatGptStatus.lastRefresh && (
-								<div className="text-sm text-vscode-descriptionForeground">
-									{t("settings:openaiAuth.chatgptAuth.lastRefresh")}:{" "}
-									{new Date(chatGptStatus.lastRefresh).toLocaleString()}
-								</div>
-							)}
-						</div>
-
-						<div className="flex gap-2">
-							<VSCodeButton appearance="secondary" onClick={handleRefresh} disabled={isAuthLoading}>
-								{isAuthLoading
-									? t("settings:openaiAuth.chatgptAuth.refreshingButton")
-									: t("settings:openaiAuth.chatgptAuth.refreshButton")}
-							</VSCodeButton>
-							<VSCodeButton appearance="secondary" onClick={handleSignOut}>
-								{showSignOutConfirm
-									? t("settings:openaiAuth.chatgptAuth.signOutConfirmButton")
-									: t("settings:openaiAuth.chatgptAuth.signOutButton")}
-							</VSCodeButton>
-						</div>
-					</>
-				) : (
-					<>
-						{chatGptStatus?.error && (
-							<div className="p-3 bg-vscode-inputValidation-errorBackground border border-vscode-inputValidation-errorBorder rounded text-sm">
-								{chatGptStatus?.error}
-							</div>
-						)}
-
-						<div className="flex flex-col gap-2">
-							<VSCodeButton appearance="primary" onClick={handleSignIn} disabled={isAuthLoading}>
-								{isAuthLoading
-									? t("settings:openaiAuth.chatgptAuth.signingInButton")
-									: t("settings:openaiAuth.chatgptAuth.signInButton")}
-							</VSCodeButton>
-
-							<VSCodeButton
-								appearance="secondary"
-								onClick={handleImportFromCodex}
-								disabled={isAuthLoading}>
-								{t("settings:openaiAuth.chatgptAuth.importFromCodexButton")}
-							</VSCodeButton>
-
-							<div className="text-xs text-vscode-descriptionForeground mt-1">
-								{"Import your existing Codex CLI credentials"}
-							</div>
-						</div>
-					</>
-				)}
-			</div>
-		)
 	}
 
 	return (
 		<>
-			{/* Authentication Mode Selection */}
-			<div className="mb-4">
-				<label className="block font-medium mb-2">{t("settings:openaiAuth.authMode.label")}</label>
-				<VSCodeDropdown
-					value={authMode}
-					onChange={(e: any) => handleAuthModeChange(e.target.value as "apiKey" | "chatgpt")}
-					className="w-full">
-					<VSCodeOption value="apiKey">{t("settings:openaiAuth.authMode.apiKey")}</VSCodeOption>
-					<VSCodeOption value="chatgpt">{t("settings:openaiAuth.authMode.chatgpt")}</VSCodeOption>
-				</VSCodeDropdown>
-				<div className="text-sm text-vscode-descriptionForeground mt-1">
-					{t("settings:openaiAuth.authMode.description")}
-				</div>
-			</div>
+			<Checkbox
+				checked={openAiNativeBaseUrlSelected}
+				onChange={(checked: boolean) => {
+					setOpenAiNativeBaseUrlSelected(checked)
 
-			{authMode === "chatgpt" ? (
-				renderChatGptAuth()
-			) : (
+					if (!checked) {
+						setApiConfigurationField("openAiNativeBaseUrl", "")
+					}
+				}}>
+				{t("settings:providers.useCustomBaseUrl")}
+			</Checkbox>
+			{openAiNativeBaseUrlSelected && (
 				<>
-					<Checkbox
-						checked={openAiNativeBaseUrlSelected}
-						onChange={(checked: boolean) => {
-							setOpenAiNativeBaseUrlSelected(checked)
-
-							if (!checked) {
-								setApiConfigurationField("openAiNativeBaseUrl", "")
-							}
-						}}>
-						{t("settings:providers.useCustomBaseUrl")}
-					</Checkbox>
-					{openAiNativeBaseUrlSelected && (
-						<>
-							<VSCodeTextField
-								value={apiConfiguration?.openAiNativeBaseUrl || ""}
-								type="url"
-								onInput={handleInputChange("openAiNativeBaseUrl")}
-								placeholder="https://api.openai.com/v1"
-								className="w-full mt-1"
-							/>
-						</>
-					)}
 					<VSCodeTextField
-						value={apiConfiguration?.openAiNativeApiKey || ""}
-						type="password"
-						onInput={handleInputChange("openAiNativeApiKey")}
-						placeholder={t("settings:placeholders.apiKey")}
-						className="w-full">
-						<label className="block font-medium mb-1">{t("settings:providers.openAiApiKey")}</label>
-					</VSCodeTextField>
-					<div className="text-sm text-vscode-descriptionForeground -mt-2">
-						{t("settings:providers.apiKeyStorageNotice")}
-					</div>
-					{!apiConfiguration?.openAiNativeApiKey && (
-						<VSCodeButtonLink href="https://platform.openai.com/api-keys" appearance="secondary">
-							{t("settings:providers.getOpenAiApiKey")}
-						</VSCodeButtonLink>
-					)}
+						value={apiConfiguration?.openAiNativeBaseUrl || ""}
+						type="url"
+						onInput={handleInputChange("openAiNativeBaseUrl")}
+						placeholder="https://api.openai.com/v1"
+						className="w-full mt-1"
+					/>
 				</>
 			)}
+			<VSCodeTextField
+				value={apiConfiguration?.openAiNativeApiKey || ""}
+				type="password"
+				onInput={handleInputChange("openAiNativeApiKey")}
+				placeholder={t("settings:placeholders.apiKey")}
+				className="w-full">
+				<label className="block font-medium mb-1">{t("settings:providers.openAiApiKey")}</label>
+			</VSCodeTextField>
+			<div className="text-sm text-vscode-descriptionForeground -mt-2">
+				{t("settings:providers.apiKeyStorageNotice")}
+			</div>
+			{!apiConfiguration?.openAiNativeApiKey && (
+				<VSCodeButtonLink href="https://platform.openai.com/api-keys" appearance="secondary">
+					{t("settings:providers.getOpenAiApiKey")}
+				</VSCodeButtonLink>
+			)}
+
+			{/* Codex CLI Import Section */}
+			<div className="mt-4 pt-4 border-t border-vscode-widget-border">
+				<div className="mb-2">
+					<label className="block font-medium text-sm">Import from Codex CLI</label>
+					<div className="text-xs text-vscode-descriptionForeground mt-1">
+						Import your existing Codex CLI credentials
+					</div>
+				</div>
+				<VSCodeButton appearance="secondary" onClick={handleImportFromCodex} disabled={isAuthLoading}>
+					{t("settings:openaiAuth.chatgptAuth.importFromCodexButton")}
+				</VSCodeButton>
+			</div>
 		</>
 	)
 }

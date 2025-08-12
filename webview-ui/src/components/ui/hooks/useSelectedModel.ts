@@ -224,6 +224,11 @@ function getSelectedModel({
 			const info = openAiNativeModels[id as keyof typeof openAiNativeModels]
 			return { id, info }
 		}
+		case "openai-pro-plus": {
+			const id = apiConfiguration.apiModelId ?? openAiNativeDefaultModelId
+			const info = openAiNativeModels[id as keyof typeof openAiNativeModels]
+			return { id, info }
+		}
 		case "mistral": {
 			const id = apiConfiguration.apiModelId ?? mistralDefaultModelId
 			const info = mistralModels[id as keyof typeof mistralModels]

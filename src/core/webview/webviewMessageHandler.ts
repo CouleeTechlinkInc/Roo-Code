@@ -2628,7 +2628,7 @@ export const webviewMessageHandler = async (
 					authenticated = true
 					try {
 						// Parse JWT to extract user info
-						const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString())
+						const payload = JSON.parse(Buffer.from(idToken.split(".")[1], "base64").toString())
 						userEmail = payload.email
 						userName = payload.name
 					} catch (error) {
@@ -2675,6 +2675,11 @@ export const webviewMessageHandler = async (
 
 		case "openaiImportFromCodex": {
 			await provider.handleCodexImport()
+			break
+		}
+
+		case "openaiProPlusImportFromCodex": {
+			await provider.handleCodexImportProPlus()
 			break
 		}
 	}

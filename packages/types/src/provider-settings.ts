@@ -26,6 +26,7 @@ export const providerNames = [
 	"gemini",
 	"gemini-cli",
 	"openai-native",
+	"openai-pro-plus",
 	"mistral",
 	"moonshot",
 	"deepseek",
@@ -146,9 +147,7 @@ const vertexSchema = apiModelIdProviderModelSchema.extend({
 const openAiSchema = baseProviderSettingsSchema.extend({
 	openAiBaseUrl: z.string().optional(),
 	openAiApiKey: z.string().optional(),
-	openAiAuthMode: z
-		.union([z.literal("apiKey"), z.literal("chatgpt")])
-		.optional(),
+	openAiAuthMode: z.union([z.literal("apiKey"), z.literal("chatgpt")]).optional(),
 	openAiLegacyFormat: z.boolean().optional(),
 	openAiR1FormatEnabled: z.boolean().optional(),
 	openAiModelId: z.string().optional(),
@@ -203,6 +202,16 @@ const geminiCliSchema = apiModelIdProviderModelSchema.extend({
 const openAiNativeSchema = apiModelIdProviderModelSchema.extend({
 	openAiNativeApiKey: z.string().optional(),
 	openAiNativeBaseUrl: z.string().optional(),
+})
+
+const openAiProPlusSchema = apiModelIdProviderModelSchema.extend({
+	openAiProPlusApiKey: z.string().optional(),
+	openAiProPlusBaseUrl: z.string().optional(),
+	// Reuse ChatGPT auth fields for Codex CLI import
+	openAiChatGptApiKey: z.string().optional(),
+	openAiChatGptIdToken: z.string().optional(),
+	openAiChatGptRefreshToken: z.string().optional(),
+	openAiChatGptLastRefresh: z.string().optional(),
 })
 
 const mistralSchema = apiModelIdProviderModelSchema.extend({
@@ -308,6 +317,7 @@ export const providerSettingsSchemaDiscriminated = z.discriminatedUnion("apiProv
 	geminiSchema.merge(z.object({ apiProvider: z.literal("gemini") })),
 	geminiCliSchema.merge(z.object({ apiProvider: z.literal("gemini-cli") })),
 	openAiNativeSchema.merge(z.object({ apiProvider: z.literal("openai-native") })),
+	openAiProPlusSchema.merge(z.object({ apiProvider: z.literal("openai-pro-plus") })),
 	mistralSchema.merge(z.object({ apiProvider: z.literal("mistral") })),
 	deepSeekSchema.merge(z.object({ apiProvider: z.literal("deepseek") })),
 	doubaoSchema.merge(z.object({ apiProvider: z.literal("doubao") })),
@@ -344,6 +354,7 @@ export const providerSettingsSchema = z.object({
 	...geminiSchema.shape,
 	...geminiCliSchema.shape,
 	...openAiNativeSchema.shape,
+	...openAiProPlusSchema.shape,
 	...mistralSchema.shape,
 	...deepSeekSchema.shape,
 	...doubaoSchema.shape,

@@ -76,6 +76,7 @@ import {
 	Moonshot,
 	Ollama,
 	OpenAI,
+	OpenAIProPlus,
 	OpenAICompatible,
 	OpenRouter,
 	Requesty,
@@ -303,6 +304,7 @@ const ApiOptions = ({
 				cerebras: { field: "apiModelId", default: cerebrasDefaultModelId },
 				"claude-code": { field: "apiModelId", default: claudeCodeDefaultModelId },
 				"openai-native": { field: "apiModelId", default: openAiNativeDefaultModelId },
+				"openai-pro-plus": { field: "apiModelId", default: openAiNativeDefaultModelId },
 				gemini: { field: "apiModelId", default: geminiDefaultModelId },
 				deepseek: { field: "apiModelId", default: deepSeekDefaultModelId },
 				doubao: { field: "apiModelId", default: doubaoDefaultModelId },
@@ -455,6 +457,13 @@ const ApiOptions = ({
 
 			{selectedProvider === "openai-native" && (
 				<OpenAI apiConfiguration={apiConfiguration} setApiConfigurationField={setApiConfigurationField} />
+			)}
+
+			{selectedProvider === "openai-pro-plus" && (
+				<OpenAIProPlus
+					apiConfiguration={apiConfiguration}
+					setApiConfigurationField={setApiConfigurationField}
+				/>
 			)}
 
 			{selectedProvider === "mistral" && (

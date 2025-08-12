@@ -18,6 +18,7 @@ import {
 	LmStudioHandler,
 	GeminiHandler,
 	OpenAiNativeHandler,
+	OpenAiProPlusHandler,
 	DeepSeekHandler,
 	MoonshotHandler,
 	MistralHandler,
@@ -103,6 +104,8 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 			return new GeminiHandler(options)
 		case "openai-native":
 			return new OpenAiNativeHandler(options)
+		case "openai-pro-plus":
+			return new OpenAiProPlusHandler(options)
 		case "deepseek":
 			return new DeepSeekHandler(options)
 		case "doubao":
@@ -152,8 +155,8 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
  * when using openai provider with chatgpt auth mode
  */
 export async function buildApiHandlerWithAuth(
-	configuration: ProviderSettings, 
-	context?: vscode.ExtensionContext
+	configuration: ProviderSettings,
+	context?: vscode.ExtensionContext,
 ): Promise<ApiHandler> {
 	const { apiProvider, ...options } = configuration
 

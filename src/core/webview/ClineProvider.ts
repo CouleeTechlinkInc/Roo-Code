@@ -1666,6 +1666,76 @@ export class ClineProvider
 		vscode.window.showInformationMessage("Codex CLI credentials imported successfully")
 	}
 
+	/**
+	 * Handle Codex CLI import specifically for OpenAI Pro/Plus provider
+	 */
+	async handleCodexImportProPlus(): Promise<void> {
+		try {
+			// Reuse existing import logic but target Pro/Plus settings
+			const importMethod = await vscode.window.showQuickPick(
+				[
+					{ label: "Import from file", value: "file", description: "Read from ~/.codex/auth.json" },
+					{ label: "Paste auth.json content", value: "paste", description: "Paste the content directly" },
+				],
+				{
+					placeHolder: "How would you like to import Codex CLI credentials for OpenAI (Pro/Plus)?",
+					ignoreFocusOut: true,
+				},
+			)
+			if (!importMethod) return
+
+			let authData: any
+			if (importMethod.value === "file") {
+				authData = await this.importFromCodexFile()
+			} else {
+				authData = await this.importFromCodexPaste()
+			}
+
+			if (!authData) return
+
+			// Store credentials in SecretStorage like the original method
+			if (authData.OPENAI_API_KEY) {
+				await this.context.secrets.store("roo.openai.chatgpt.apiKey", authData.OPENAI_API_KEY)
+			}
+
+			if (authData.tokens?.id_token) {
+				await this.context.secrets.store("roo.openai.chatgpt.idToken", authData.tokens.id_token)
+			}
+
+			if (authData.tokens?.refresh_token) {
+				await this.context.secrets.store("roo.openai.chatgpt.refreshToken", authData.tokens.refresh_token)
+			}
+
+			await this.context.secrets.store("roo.openai.chatgpt.lastRefreshIso", new Date().toISOString())
+
+			// Create new configuration for Pro/Plus provider
+			const { apiConfiguration, currentApiConfigName } = await this.getState()
+			const newConfiguration: ProviderSettings = {
+				...apiConfiguration,
+				apiProvider: "openai-pro-plus",
+				// Ensure we have a model ID set for validation (default to gpt-4o if not set)
+				...(!apiConfiguration.apiModelId && {
+					apiModelId: "gpt-4o",
+				}),
+			}
+
+			await this.upsertProviderProfile(currentApiConfigName, newConfiguration)
+
+			// Notify UI of completion
+			this.postMessageToWebview({
+				type: "openaiProPlusImportFromCodexComplete",
+			})
+
+			vscode.window.showInformationMessage(
+				"Successfully imported Codex CLI credentials for OpenAI (Pro/Plus) provider",
+			)
+		} catch (error) {
+			vscode.window.showErrorMessage(
+				`Failed to import Codex CLI credentials for OpenAI (Pro/Plus): ${error instanceof Error ? error.message : "Unknown error"}`,
+			)
+		}
+	}
+
 	// Task history
 
 	async getTaskWithId(id: string): Promise<{
