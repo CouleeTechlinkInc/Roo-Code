@@ -1453,8 +1453,8 @@ export class ClineProvider
 				type: "openAiChatGptStatus",
 				payload: {
 					authenticated: false,
-					error: error instanceof Error ? error.message : "Unknown error"
-				}
+					error: error instanceof Error ? error.message : "Unknown error",
+				},
 			})
 
 			// Show user-friendly error with actionable guidance
@@ -1462,7 +1462,7 @@ export class ClineProvider
 			if (errorMessage.includes("Platform onboarding")) {
 				const action = await vscode.window.showErrorMessage(
 					"OpenAI sign-in succeeded but API access is not enabled. You need to complete Platform setup to use API features.",
-					"Open Platform Setup"
+					"Open Platform Setup",
 				)
 				if (action === "Open Platform Setup") {
 					vscode.env.openExternal(vscode.Uri.parse("https://platform.openai.com/"))
@@ -1649,12 +1649,16 @@ export class ClineProvider
 
 		await this.context.secrets.store("roo.openai.chatgpt.lastRefreshIso", new Date().toISOString())
 
-		// Switch to ChatGPT auth mode
+		// Switch to ChatGPT auth mode while preserving the current provider
 		const { apiConfiguration, currentApiConfigName } = await this.getState()
 		const newConfiguration: ProviderSettings = {
 			...apiConfiguration,
-			apiProvider: "openai",
 			openAiAuthMode: "chatgpt",
+			// Ensure we have a model ID set for validation (default to gpt-4o if not set)
+			...(apiConfiguration.apiProvider === "openai-native" &&
+				!apiConfiguration.apiModelId && {
+					apiModelId: "gpt-4o",
+				}),
 		}
 
 		await this.upsertProviderProfile(currentApiConfigName, newConfiguration)

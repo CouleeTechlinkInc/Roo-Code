@@ -60,22 +60,21 @@ export class OpenAIAuth {
 	 */
 	static async exchangeCodeForTokens(code: string, codeVerifier: string, redirectUri: string): Promise<OpenAITokens> {
 		try {
-			const response = await axios.post(
-				"https://auth.openai.com/oauth/token",
-				{
-					grant_type: "authorization_code",
-					client_id: this.CONFIG.clientId,
-					code,
-					redirect_uri: redirectUri,
-					code_verifier: codeVerifier,
+			// Use form encoding like Codex CLI
+			const formData = new URLSearchParams({
+				grant_type: "authorization_code",
+				code,
+				redirect_uri: redirectUri,
+				client_id: this.CONFIG.clientId,
+				code_verifier: codeVerifier,
+			})
+
+			const response = await axios.post("https://auth.openai.com/oauth/token", formData.toString(), {
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+					Accept: "application/json",
 				},
-				{
-					headers: {
-						"Content-Type": "application/json",
-						Accept: "application/json",
-					},
-				},
-			)
+			})
 
 			if (!response.data.access_token) {
 				throw new Error("Failed to exchange authorization code for tokens")
@@ -97,22 +96,27 @@ export class OpenAIAuth {
 	static async exchangeTokenForApiKey(idToken: string, clientId?: string): Promise<string> {
 		try {
 			console.log("Attempting API key exchange with OpenAI...")
-			const response = await axios.post(
-				"https://auth.openai.com/oauth/token",
-				{
-					grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
-					requested_token_type: "openai-api-key",
-					subject_token: idToken,
-					subject_token_type: "urn:ietf:params:oauth:token-type:id_token",
-					client_id: clientId || "RooCode", // Use Roo Code client ID for token exchange
+
+			// Generate random ID and today's date like Codex CLI does
+			const randomId = Math.random().toString(16).substring(2, 8)
+			const today = new Date().toISOString().split("T")[0]
+
+			// Use form encoding like Codex CLI
+			const formData = new URLSearchParams({
+				grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+				client_id: this.CONFIG.clientId,
+				requested_token: "openai-api-key",
+				subject_token: idToken,
+				subject_token_type: "urn:ietf:params:oauth:token-type:id_token",
+				name: `Roo Code [auto-generated] (${today}) [${randomId}]`,
+			})
+
+			const response = await axios.post("https://auth.openai.com/oauth/token", formData.toString(), {
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+					Accept: "application/json",
 				},
-				{
-					headers: {
-						"Content-Type": "application/json",
-						Accept: "application/json",
-					},
-				},
-			)
+			})
 
 			if (!response.data.access_token) {
 				throw new Error(
@@ -129,7 +133,7 @@ export class OpenAIAuth {
 					status: error.response?.status,
 					error: error.response?.data?.error,
 					description: error.response?.data?.error_description,
-					fullResponse: error.response?.data
+					fullResponse: error.response?.data,
 				})
 
 				// Provide more specific error messages based on common scenarios
@@ -155,12 +159,15 @@ export class OpenAIAuth {
 	 */
 	static async refreshTokens(refreshToken: string): Promise<OpenAITokens> {
 		try {
+			// Use form encoding like Codex CLI (though they use JSON for refresh)
+			// Let's stick with JSON for refresh as that's what Codex CLI uses
 			const response = await axios.post(
 				"https://auth.openai.com/oauth/token",
 				{
-					grant_type: "refresh_token",
 					client_id: this.CONFIG.clientId,
+					grant_type: "refresh_token",
 					refresh_token: refreshToken,
+					scope: "openid profile email",
 				},
 				{
 					headers: {

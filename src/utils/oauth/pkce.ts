@@ -9,14 +9,13 @@ export interface PKCEChallenge {
 /**
  * Generates a PKCE challenge for OAuth2 authentication.
  * This function creates a cryptographically secure code verifier and its corresponding challenge
- * following RFC 7636 specification.
+ * following RFC 7636 specification and matching Codex CLI exactly.
  */
 export function generatePKCEChallenge(): PKCEChallenge {
-	// Generate cryptographically secure random string (43 characters)
-	// Using 32 bytes which gives us 43 characters in base64url encoding
-	const codeVerifier = randomBytes(32).toString("base64url").slice(0, 43) // Ensure exactly 43 characters
+	// Generate 64 random bytes and convert to hex string (128 hex chars) - matching Codex CLI
+	const codeVerifier = randomBytes(64).toString("hex")
 
-	// Create SHA256 hash and encode as base64url
+	// Create SHA256 hash and encode as base64url (remove padding like Codex CLI)
 	const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url")
 
 	return {
@@ -29,7 +28,8 @@ export function generatePKCEChallenge(): PKCEChallenge {
 /**
  * Generates a cryptographically secure state parameter for OAuth2 authentication.
  * The state parameter is used to prevent CSRF attacks during the OAuth flow.
+ * Matches Codex CLI with 32 bytes (64 hex chars).
  */
 export function generateState(): string {
-	return randomBytes(16).toString("hex")
+	return randomBytes(32).toString("hex")
 }
