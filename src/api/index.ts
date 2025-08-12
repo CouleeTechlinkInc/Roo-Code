@@ -1,4 +1,5 @@
 import { Anthropic } from "@anthropic-ai/sdk"
+import * as vscode from "vscode"
 
 import type { ProviderSettings, ModelInfo } from "@roo-code/types"
 
@@ -144,4 +145,32 @@ export function buildApiHandler(configuration: ProviderSettings): ApiHandler {
 			apiProvider satisfies "gemini-cli" | undefined
 			return new AnthropicHandler(options)
 	}
+}
+
+/**
+ * Enhanced buildApiHandler that can inject ChatGPT credentials from SecretStorage
+ * when using openai provider with chatgpt auth mode
+ */
+export async function buildApiHandlerWithAuth(
+	configuration: ProviderSettings, 
+	context?: vscode.ExtensionContext
+): Promise<ApiHandler> {
+	const { apiProvider, ...options } = configuration
+
+	// For OpenAI provider with ChatGPT auth mode, inject the ChatGPT API key from SecretStorage
+	if (apiProvider === "openai" && options.openAiAuthMode === "chatgpt" && context) {
+		try {
+			const chatGptApiKey = await context.secrets.get("roo.openai.chatgpt.apiKey")
+			if (chatGptApiKey) {
+				// Inject the ChatGPT API key into options
+				const enhancedOptions = { ...options, openAiChatGptApiKey: chatGptApiKey }
+				return new OpenAiHandler(enhancedOptions)
+			}
+		} catch (error) {
+			console.warn("Failed to retrieve ChatGPT API key from SecretStorage:", error)
+		}
+	}
+
+	// Fall back to regular buildApiHandler for all other cases
+	return buildApiHandler(configuration)
 }

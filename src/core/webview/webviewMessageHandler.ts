@@ -2611,5 +2611,100 @@ export const webviewMessageHandler = async (
 			}
 			break
 		}
+
+		case "requestOpenAIChatGptStatus": {
+			try {
+				// Check SecretStorage for ChatGPT authentication tokens
+				const idToken = await provider.context.secrets.get("roo.openai.chatgpt.idToken")
+				const apiKey = await provider.context.secrets.get("roo.openai.chatgpt.apiKey")
+				const refreshToken = await provider.context.secrets.get("roo.openai.chatgpt.refreshToken")
+				const lastRefresh = await provider.context.secrets.get("roo.openai.chatgpt.lastRefreshIso")
+
+				let userEmail: string | undefined
+				let userName: string | undefined
+				let authenticated = false
+
+				if (idToken && apiKey) {
+					authenticated = true
+					try {
+						// Parse JWT to extract user info
+						const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString())
+						userEmail = payload.email
+						userName = payload.name
+					} catch (error) {
+						provider.log(`Error parsing JWT token: ${error}`)
+					}
+				}
+
+				await provider.postMessageToWebview({
+					type: "openAiChatGptStatus",
+					openAiChatGptStatus: {
+						authenticated,
+						userEmail,
+						userName,
+						lastRefresh,
+					},
+				})
+			} catch (error) {
+				provider.log(`Error getting ChatGPT status: ${error}`)
+				await provider.postMessageToWebview({
+					type: "openAiChatGptStatus",
+					openAiChatGptStatus: {
+						authenticated: false,
+						error: "Failed to check authentication status",
+					},
+				})
+			}
+			break
+		}
+
+		case "openaiSignInChatGPT": {
+			// TODO: Implement OAuth flow as per PRP
+			// This would trigger the local server + browser OAuth flow
+			provider.log("ChatGPT sign-in not yet implemented")
+			vscode.window.showInformationMessage("ChatGPT authentication will be implemented in a future update")
+			break
+		}
+
+		case "openaiSignOutChatGPT": {
+			try {
+				// Clear all ChatGPT-related secrets
+				await provider.context.secrets.delete("roo.openai.chatgpt.idToken")
+				await provider.context.secrets.delete("roo.openai.chatgpt.apiKey")
+				await provider.context.secrets.delete("roo.openai.chatgpt.refreshToken")
+				await provider.context.secrets.delete("roo.openai.chatgpt.lastRefreshIso")
+
+				await provider.postMessageToWebview({
+					type: "openAiChatGptSignOutSuccess",
+				})
+
+				provider.log("ChatGPT credentials cleared successfully")
+			} catch (error) {
+				provider.log(`Error signing out of ChatGPT: ${error}`)
+				vscode.window.showErrorMessage("Failed to sign out of ChatGPT")
+			}
+			break
+		}
+
+		case "openaiRefreshCredentials": {
+			// TODO: Implement token refresh as per PRP
+			// This would use the refresh token to get new tokens
+			provider.log("ChatGPT credential refresh not yet implemented")
+			vscode.window.showInformationMessage("Credential refresh will be implemented in a future update")
+			break
+		}
+
+		case "openaiImportFromCodex": {
+			try {
+				// TODO: Implement Codex CLI import as per PRP
+				// This would either read ~/.codex/auth.json or show a paste dialog
+				provider.log("Codex CLI import not yet implemented")
+				vscode.window.showInformationMessage("Codex CLI import will be implemented in a future update")
+			} catch (error) {
+				provider.log(`Error importing from Codex CLI: ${error}`)
+				vscode.window.showErrorMessage("Failed to import credentials from Codex CLI")
+			}
+			break
+		}
 	}
 }

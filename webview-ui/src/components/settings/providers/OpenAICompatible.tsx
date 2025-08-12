@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react"
 import { useEvent } from "react-use"
 import { Checkbox } from "vscrui"
-import { VSCodeButton, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
+import { VSCodeButton, VSCodeTextField, VSCodeDropdown, VSCodeOption } from "@vscode/webview-ui-toolkit/react"
 
 import {
 	type ProviderSettings,
@@ -12,10 +12,11 @@ import {
 	openAiModelInfoSaneDefaults,
 } from "@roo-code/types"
 
-import { ExtensionMessage } from "@roo/ExtensionMessage"
+import { ExtensionMessage, OpenAiChatGptStatusPayload } from "@roo/ExtensionMessage"
 
 import { useAppTranslation } from "@src/i18n/TranslationContext"
 import { Button, StandardTooltip } from "@src/components/ui"
+import { vscode } from "@src/utils/vscode"
 
 import { convertHeadersToObject } from "../utils/headers"
 import { inputEventTransform, noTransform } from "../transforms"
@@ -40,6 +41,16 @@ export const OpenAICompatible = ({
 
 	const [azureApiVersionSelected, setAzureApiVersionSelected] = useState(!!apiConfiguration?.azureApiVersion)
 	const [openAiLegacyFormatSelected, setOpenAiLegacyFormatSelected] = useState(!!apiConfiguration?.openAiLegacyFormat)
+
+	// ChatGPT authentication state
+	const [authMode, setAuthMode] = useState<"apiKey" | "chatgpt">(
+		apiConfiguration?.openAiAuthMode || "apiKey"
+	)
+	const [chatGptStatus, setChatGptStatus] = useState<OpenAiChatGptStatusPayload>({
+		authenticated: false
+	})
+	const [isAuthLoading, setIsAuthLoading] = useState(false)
+	const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
 
 	const [openAiModels, setOpenAiModels] = useState<Record<string, ModelInfo> | null>(null)
 
@@ -114,13 +125,208 @@ export const OpenAICompatible = ({
 				setOpenAiModels(Object.fromEntries(updatedModels.map((item) => [item, openAiModelInfoSaneDefaults])))
 				break
 			}
+			case "openAiChatGptStatus": {
+				if (message.openAiChatGptStatus) {
+					setChatGptStatus(message.openAiChatGptStatus)
+				}
+				setIsAuthLoading(false)
+				break
+			}
+			case "openAiChatGptAuthSuccess":
+			case "openAiChatGptSignOutSuccess":
+			case "openAiChatGptRefreshSuccess": {
+				// Request updated status after successful auth operations
+				vscode.postMessage({ type: "requestOpenAIChatGptStatus" })
+				setIsAuthLoading(false)
+				setShowSignOutConfirm(false)
+				break
+			}
 		}
 	}, [])
 
 	useEvent("message", onMessage)
 
+	// Request ChatGPT status when component mounts
+	useEffect(() => {
+		if (authMode === "chatgpt") {
+			vscode.postMessage({ type: "requestOpenAIChatGptStatus" })
+		}
+	}, [authMode])
+
+	// Handle auth mode change
+	const handleAuthModeChange = useCallback((newMode: "apiKey" | "chatgpt") => {
+		setAuthMode(newMode)
+		setApiConfigurationField("openAiAuthMode", newMode)
+		if (newMode === "chatgpt") {
+			vscode.postMessage({ type: "requestOpenAIChatGptStatus" })
+		}
+	}, [setApiConfigurationField])
+
+	// Authentication action handlers
+	const handleSignIn = useCallback(() => {
+		setIsAuthLoading(true)
+		vscode.postMessage({ type: "openaiSignInChatGPT" })
+	}, [])
+
+	const handleSignOut = useCallback(() => {
+		setIsAuthLoading(true)
+		vscode.postMessage({ type: "openaiSignOutChatGPT" })
+	}, [])
+
+	const handleRefresh = useCallback(() => {
+		setIsAuthLoading(true)
+		vscode.postMessage({ type: "openaiRefreshCredentials" })
+	}, [])
+
+	const handleImportFromCodex = useCallback(() => {
+		setIsAuthLoading(true)
+		vscode.postMessage({ type: "openaiImportFromCodex" })
+	}, [])
+
+	// Render ChatGPT authentication UI
+	const renderChatGptAuth = () => {
+		return (
+			<div className="flex flex-col gap-3">
+				<div className="text-sm text-vscode-descriptionForeground">
+					{t("settings:openaiAuth.chatgptAuth.description")}
+				</div>
+				
+				{/* Status Display */}
+				<div className="flex flex-col gap-2">
+					<div className="flex items-center gap-2">
+						<div className={`w-2 h-2 rounded-full ${
+							chatGptStatus.authenticated 
+								? "bg-green-500" 
+								: "bg-gray-400"
+						}`} />
+						<span className="text-sm font-medium">
+							{chatGptStatus.authenticated 
+								? t("settings:openaiAuth.chatgptAuth.statusAuthenticated")
+								: t("settings:openaiAuth.chatgptAuth.statusNotAuthenticated")
+							}
+						</span>
+					</div>
+					
+					{chatGptStatus.authenticated && chatGptStatus.userEmail && (
+						<div className="text-sm text-vscode-descriptionForeground ml-4">
+							{t("settings:openaiAuth.chatgptAuth.userInfo", { email: chatGptStatus.userEmail })}
+						</div>
+					)}
+					
+					{chatGptStatus.lastRefresh && (
+						<div className="text-sm text-vscode-descriptionForeground ml-4">
+							{t("settings:openaiAuth.chatgptAuth.lastRefresh", { 
+								date: new Date(chatGptStatus.lastRefresh).toLocaleString() 
+							})}
+						</div>
+					)}
+					
+					{chatGptStatus.error && (
+						<div className="text-sm text-red-500 ml-4">
+							{t("settings:openaiAuth.chatgptAuth.authError", { error: chatGptStatus.error })}
+						</div>
+					)}
+				</div>
+				
+				{/* Action Buttons */}
+				<div className="flex flex-col gap-2">
+					{!chatGptStatus.authenticated ? (
+						<div className="flex gap-2">
+							<VSCodeButton 
+								appearance="primary" 
+								onClick={handleSignIn}
+								disabled={isAuthLoading}
+							>
+								{isAuthLoading 
+									? t("settings:openaiAuth.chatgptAuth.signingInButton")
+									: t("settings:openaiAuth.chatgptAuth.signInButton")
+								}
+							</VSCodeButton>
+							<VSCodeButton 
+								appearance="secondary" 
+								onClick={handleImportFromCodex}
+								disabled={isAuthLoading}
+							>
+								{t("settings:openaiAuth.chatgptAuth.importFromCodexButton")}
+							</VSCodeButton>
+						</div>
+					) : (
+						<div className="flex gap-2">
+							<VSCodeButton 
+								appearance="secondary" 
+								onClick={handleRefresh}
+								disabled={isAuthLoading}
+							>
+								{isAuthLoading 
+									? t("settings:openaiAuth.chatgptAuth.refreshingButton")
+									: t("settings:openaiAuth.chatgptAuth.refreshButton")
+								}
+							</VSCodeButton>
+							{!showSignOutConfirm ? (
+								<VSCodeButton 
+									appearance="secondary" 
+									onClick={() => setShowSignOutConfirm(true)}
+									disabled={isAuthLoading}
+								>
+									{t("settings:openaiAuth.chatgptAuth.signOutButton")}
+								</VSCodeButton>
+							) : (
+								<div className="flex flex-col gap-2">
+									<div className="text-sm text-vscode-descriptionForeground">
+										{t("settings:openaiAuth.chatgptAuth.signOutConfirmMessage")}
+									</div>
+									<div className="flex gap-2">
+										<VSCodeButton 
+											appearance="primary" 
+											onClick={handleSignOut}
+											disabled={isAuthLoading}
+										>
+											{t("settings:openaiAuth.chatgptAuth.signOutConfirmButton")}
+										</VSCodeButton>
+										<VSCodeButton 
+											appearance="secondary" 
+											onClick={() => setShowSignOutConfirm(false)}
+										>
+											{t("settings:common.cancel")}
+										</VSCodeButton>
+									</div>
+								</div>
+							)}
+						</div>
+					)}
+				</div>
+			</div>
+		)
+	}
+
 	return (
 		<>
+			{/* Authentication Mode Selection */}
+			<div className="mb-4">
+				<label className="block font-medium mb-2">
+					{t("settings:openaiAuth.authMode.label")}
+				</label>
+				<VSCodeDropdown
+					value={authMode}
+					onChange={(e: any) => handleAuthModeChange(e.target.value as "apiKey" | "chatgpt")}
+					className="w-full"
+				>
+					<VSCodeOption value="apiKey">
+						{t("settings:openaiAuth.authMode.apiKey")}
+					</VSCodeOption>
+					<VSCodeOption value="chatgpt">
+						{t("settings:openaiAuth.authMode.chatgpt")}
+					</VSCodeOption>
+				</VSCodeDropdown>
+				<div className="text-sm text-vscode-descriptionForeground mt-1">
+					{t("settings:openaiAuth.authMode.description")}
+				</div>
+			</div>
+
+			{authMode === "chatgpt" ? (
+				renderChatGptAuth()
+			) : (
+				<>
 			<VSCodeTextField
 				value={apiConfiguration?.openAiBaseUrl || ""}
 				type="url"
@@ -624,6 +830,8 @@ export const OpenAICompatible = ({
 					{t("settings:providers.customModel.resetDefaults")}
 				</Button>
 			</div>
+			</>
+			)}
 		</>
 	)
 }

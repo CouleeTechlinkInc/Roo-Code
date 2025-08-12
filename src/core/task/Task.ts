@@ -36,7 +36,7 @@ import { TelemetryService } from "@roo-code/telemetry"
 import { CloudService, UnifiedBridgeService } from "@roo-code/cloud"
 
 // api
-import { ApiHandler, ApiHandlerCreateMessageMetadata, buildApiHandler } from "../../api"
+import { ApiHandler, ApiHandlerCreateMessageMetadata, buildApiHandler, buildApiHandlerWithAuth } from "../../api"
 import { ApiStream } from "../../api/transform/stream"
 
 // shared
@@ -190,6 +190,7 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	// API
 	readonly apiConfiguration: ProviderSettings
 	api: ApiHandler
+	private apiReady: Promise<void>
 	private static lastGlobalApiRequestTime?: number
 	private autoApprovalHandler: AutoApprovalHandler
 
@@ -303,7 +304,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 		})
 
 		this.apiConfiguration = apiConfiguration
+		// Initialize with a temporary handler, will be replaced asynchronously
 		this.api = buildApiHandler(apiConfiguration)
+		this.apiReady = this.initializeApiHandler(provider.context)
 		this.autoApprovalHandler = new AutoApprovalHandler()
 
 		this.urlContentFetcher = new UrlContentFetcher(provider.context)
@@ -365,6 +368,19 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 			} else {
 				throw new Error("Either historyItem or task/images must be provided")
 			}
+		}
+	}
+
+	/**
+	 * Initialize the API handler with ChatGPT authentication support
+	 */
+	private async initializeApiHandler(context: vscode.ExtensionContext): Promise<void> {
+		try {
+			this.api = await buildApiHandlerWithAuth(this.apiConfiguration, context)
+		} catch (error) {
+			console.warn("Failed to initialize API handler with authentication, falling back to default:", error)
+			// Fallback to default handler if authentication fails
+			this.api = buildApiHandler(this.apiConfiguration)
 		}
 	}
 
@@ -2043,6 +2059,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	private async getSystemPrompt(): Promise<string> {
+		// Ensure API handler is ready
+		await this.apiReady
+		
 		const { mcpEnabled } = (await this.providerRef.deref()?.getState()) ?? {}
 		let mcpHub: McpHub | undefined
 		if (mcpEnabled ?? true) {
@@ -2118,6 +2137,9 @@ export class Task extends EventEmitter<TaskEvents> implements TaskLike {
 	}
 
 	public async *attemptApiRequest(retryAttempt: number = 0): ApiStream {
+		// Ensure API handler is ready (especially important for ChatGPT auth)
+		await this.apiReady
+		
 		const state = await this.providerRef.deref()?.getState()
 
 		const {

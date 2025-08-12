@@ -14,6 +14,7 @@ describe("ProfileValidator", () => {
 			const profile: ProviderSettings = {
 				apiProvider: "openai",
 				openAiModelId: "gpt-4",
+				openAiAuthMode: "apiKey",
 			}
 
 			expect(ProfileValidator.isProfileAllowed(profile, allowList)).toBe(true)
@@ -42,6 +43,7 @@ describe("ProfileValidator", () => {
 			const profile: ProviderSettings = {
 				apiProvider: "openai",
 				openAiModelId: "gpt-4",
+				openAiAuthMode: "apiKey",
 			}
 
 			expect(ProfileValidator.isProfileAllowed(profile, allowList)).toBe(false)
@@ -56,6 +58,7 @@ describe("ProfileValidator", () => {
 			}
 			const profile: ProviderSettings = {
 				apiProvider: "human-relay",
+				openAiAuthMode: "apiKey", // Required field even for non-OpenAI providers
 			}
 
 			expect(ProfileValidator.isProfileAllowed(profile, allowList)).toBe(true)
@@ -85,6 +88,7 @@ describe("ProfileValidator", () => {
 			}
 			const profile: ProviderSettings = {
 				apiProvider: "openai",
+				openAiAuthMode: "apiKey",
 			}
 
 			expect(ProfileValidator.isProfileAllowed(profile, allowList)).toBe(false)
@@ -100,6 +104,7 @@ describe("ProfileValidator", () => {
 			const profile: ProviderSettings = {
 				apiProvider: "openai",
 				openAiModelId: "gpt-4",
+				openAiAuthMode: "apiKey",
 			}
 
 			expect(ProfileValidator.isProfileAllowed(profile, allowList)).toBe(true)
@@ -115,6 +120,7 @@ describe("ProfileValidator", () => {
 			const profile: ProviderSettings = {
 				apiProvider: "openai",
 				openAiModelId: "gpt-4",
+				openAiAuthMode: "apiKey",
 			}
 
 			expect(ProfileValidator.isProfileAllowed(profile, allowList)).toBe(false)
@@ -130,6 +136,7 @@ describe("ProfileValidator", () => {
 			const profile: ProviderSettings = {
 				apiProvider: "openai",
 				openAiModelId: "gpt-4",
+				openAiAuthMode: "apiKey",
 			}
 
 			expect(ProfileValidator.isProfileAllowed(profile, allowList)).toBe(false)
@@ -145,6 +152,7 @@ describe("ProfileValidator", () => {
 			const profile: ProviderSettings = {
 				apiProvider: "openai",
 				openAiModelId: "gpt-4",
+				openAiAuthMode: "apiKey",
 			}
 
 			expect(ProfileValidator.isProfileAllowed(profile, allowList)).toBe(true)
@@ -357,6 +365,7 @@ describe("ProfileValidator", () => {
 			const profile: ProviderSettings = {
 				apiProvider: "openai",
 				openAiModelId: "gpt-4",
+				openAiAuthMode: "apiKey",
 			}
 
 			expect(ProfileValidator.isProfileAllowed(profile, allowList)).toBe(false)
