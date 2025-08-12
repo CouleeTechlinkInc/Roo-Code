@@ -45,7 +45,7 @@ export const OpenAI = ({ apiConfiguration, setApiConfigurationField }: OpenAIPro
 		const handleMessage = (event: MessageEvent) => {
 			const message = event.data
 			if (message.type === "openAiChatGptStatus") {
-				setChatGptStatus(message.payload)
+				setChatGptStatus(message.payload || { authenticated: false })
 				setIsAuthLoading(false)
 			} else if (message.type === "openAiChatGptAuthSuccess") {
 				vscode.postMessage({ type: "requestOpenAIChatGptStatus" })
@@ -106,7 +106,7 @@ export const OpenAI = ({ apiConfiguration, setApiConfigurationField }: OpenAIPro
 					{t("settings:openaiAuth.chatgptAuth.description")}
 				</div>
 				
-				{chatGptStatus.authenticated ? (
+				{chatGptStatus?.authenticated ? (
 					<>
 						<div className="p-3 bg-vscode-textBlockQuote-background border border-vscode-textBlockQuote-border rounded">
 							<div className="flex items-center gap-2 mb-2">
@@ -143,9 +143,9 @@ export const OpenAI = ({ apiConfiguration, setApiConfigurationField }: OpenAIPro
 					</>
 				) : (
 					<>
-						{chatGptStatus.error && (
+						{chatGptStatus?.error && (
 							<div className="p-3 bg-vscode-inputValidation-errorBackground border border-vscode-inputValidation-errorBorder rounded text-sm">
-								{chatGptStatus.error}
+								{chatGptStatus?.error}
 							</div>
 						)}
 						
