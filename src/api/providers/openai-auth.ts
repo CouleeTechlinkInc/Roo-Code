@@ -96,6 +96,7 @@ export class OpenAIAuth {
 	 */
 	static async exchangeTokenForApiKey(idToken: string, clientId?: string): Promise<string> {
 		try {
+			console.log("Attempting API key exchange with OpenAI...")
 			const response = await axios.post(
 				"https://auth.openai.com/oauth/token",
 				{
@@ -124,6 +125,12 @@ export class OpenAIAuth {
 		} catch (error) {
 			if (axios.isAxiosError(error)) {
 				const errorMsg = error.response?.data?.error_description || error.response?.data?.error || error.message
+				console.error("API key exchange failed:", {
+					status: error.response?.status,
+					error: error.response?.data?.error,
+					description: error.response?.data?.error_description,
+					fullResponse: error.response?.data
+				})
 
 				// Provide more specific error messages based on common scenarios
 				if (error.response?.status === 400) {

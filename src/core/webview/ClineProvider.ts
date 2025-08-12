@@ -1448,10 +1448,28 @@ export class ClineProvider
 		} catch (error) {
 			this.log(`OpenAI sign-in failed: ${error instanceof Error ? error.message : "Unknown error"}`)
 
-			// Show user-friendly error
-			vscode.window.showErrorMessage(
-				`OpenAI sign-in failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-			)
+			// Update UI with error state
+			this.postMessageToWebview({
+				type: "openAiChatGptStatus",
+				payload: {
+					authenticated: false,
+					error: error instanceof Error ? error.message : "Unknown error"
+				}
+			})
+
+			// Show user-friendly error with actionable guidance
+			const errorMessage = error instanceof Error ? error.message : "Unknown error"
+			if (errorMessage.includes("Platform onboarding")) {
+				const action = await vscode.window.showErrorMessage(
+					"OpenAI sign-in succeeded but API access is not enabled. You need to complete Platform setup to use API features.",
+					"Open Platform Setup"
+				)
+				if (action === "Open Platform Setup") {
+					vscode.env.openExternal(vscode.Uri.parse("https://platform.openai.com/"))
+				}
+			} else {
+				vscode.window.showErrorMessage(`OpenAI sign-in failed: ${errorMessage}`)
+			}
 		}
 	}
 
