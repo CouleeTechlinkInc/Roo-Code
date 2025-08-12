@@ -36,7 +36,17 @@ export class OpenAiHandler extends BaseProvider implements SingleCompletionHandl
 		this.options = options
 
 		const baseURL = this.options.openAiBaseUrl ?? "https://api.openai.com/v1"
-		const apiKey = this.options.openAiApiKey ?? "not-provided"
+
+		// Determine API key based on authentication mode
+		let apiKey: string
+		if (this.options.openAiAuthMode === "chatgpt") {
+			// Use ChatGPT-specific API key from SecretStorage
+			apiKey = this.options.openAiChatGptApiKey ?? "not-provided"
+		} else {
+			// Default to standard API key mode for backward compatibility
+			apiKey = this.options.openAiApiKey ?? "not-provided"
+		}
+
 		const isAzureAiInference = this._isAzureAiInference(this.options.openAiBaseUrl)
 		const urlHost = this._getUrlHost(this.options.openAiBaseUrl)
 		const isAzureOpenAi = urlHost === "azure.com" || urlHost.endsWith(".azure.com") || options.openAiUseAzure

@@ -56,7 +56,17 @@ export class OpenAiNativeHandler extends BaseProvider implements SingleCompletio
 		if (this.options.enableGpt5ReasoningSummary === undefined) {
 			this.options.enableGpt5ReasoningSummary = true
 		}
-		const apiKey = this.options.openAiNativeApiKey ?? "not-provided"
+
+		// Determine API key based on authentication mode
+		let apiKey: string
+		if (this.options.openAiAuthMode === "chatgpt") {
+			// Use ChatGPT-specific API key from SecretStorage
+			apiKey = this.options.openAiChatGptApiKey ?? "not-provided"
+		} else {
+			// Default to standard API key mode for backward compatibility
+			apiKey = this.options.openAiNativeApiKey ?? "not-provided"
+		}
+
 		this.client = new OpenAI({ baseURL: this.options.openAiNativeBaseUrl, apiKey })
 	}
 
