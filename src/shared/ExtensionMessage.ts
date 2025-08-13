@@ -121,6 +121,10 @@ export interface ExtensionMessage {
 		| "showEditMessageDialog"
 		| "commands"
 		| "insertTextIntoTextarea"
+		| "openAiChatGptStatus"
+		| "openAiChatGptAuthSuccess"
+		| "openAiChatGptSignOutSuccess"
+		| "openAiChatGptRefreshSuccess"
 	text?: string
 	payload?: any // Add a generic payload for now, can refine later
 	action?:
@@ -195,6 +199,16 @@ export interface ExtensionMessage {
 	messageTs?: number
 	context?: string
 	commands?: Command[]
+	openAiChatGptStatus?: OpenAiChatGptStatusPayload
+}
+
+// Interface for ChatGPT authentication status payload
+export interface OpenAiChatGptStatusPayload {
+	authenticated: boolean
+	userEmail?: string
+	userName?: string
+	lastRefresh?: string
+	error?: string
 }
 
 export type ExtensionState = Pick<

@@ -146,6 +146,9 @@ const vertexSchema = apiModelIdProviderModelSchema.extend({
 const openAiSchema = baseProviderSettingsSchema.extend({
 	openAiBaseUrl: z.string().optional(),
 	openAiApiKey: z.string().optional(),
+	openAiAuthMode: z
+		.union([z.literal("apiKey"), z.literal("chatgpt")])
+		.optional(),
 	openAiLegacyFormat: z.boolean().optional(),
 	openAiR1FormatEnabled: z.boolean().optional(),
 	openAiModelId: z.string().optional(),
@@ -155,6 +158,11 @@ const openAiSchema = baseProviderSettingsSchema.extend({
 	openAiStreamingEnabled: z.boolean().optional(),
 	openAiHostHeader: z.string().optional(), // Keep temporarily for backward compatibility during migration.
 	openAiHeaders: z.record(z.string(), z.string()).optional(),
+	// ChatGPT authentication secrets (stored in SecretStorage)
+	openAiChatGptApiKey: z.string().optional(),
+	openAiChatGptIdToken: z.string().optional(),
+	openAiChatGptRefreshToken: z.string().optional(),
+	openAiChatGptLastRefresh: z.string().optional(),
 })
 
 const ollamaSchema = baseProviderSettingsSchema.extend({

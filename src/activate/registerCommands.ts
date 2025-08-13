@@ -221,6 +221,35 @@ const getCommandsMap = ({ context, outputChannel, provider }: RegisterCommandOpt
 
 		visibleProvider.postMessageToWebview({ type: "acceptInput" })
 	},
+
+	// OpenAI ChatGPT OAuth authentication commands
+	openaiSignInChatGPT: async () => {
+		const visibleProvider = getVisibleProviderOrLog(outputChannel)
+		if (!visibleProvider) return
+
+		await visibleProvider.handleOpenAISignIn()
+	},
+
+	openaiSignOutChatGPT: async () => {
+		const visibleProvider = getVisibleProviderOrLog(outputChannel)
+		if (!visibleProvider) return
+
+		await visibleProvider.handleOpenAISignOut()
+	},
+
+	openaiRefreshCredentials: async () => {
+		const visibleProvider = getVisibleProviderOrLog(outputChannel)
+		if (!visibleProvider) return
+
+		await visibleProvider.handleOpenAIRefresh()
+	},
+
+	openaiImportFromCodex: async () => {
+		const visibleProvider = getVisibleProviderOrLog(outputChannel)
+		if (!visibleProvider) return
+
+		await visibleProvider.handleCodexImport()
+	},
 })
 
 export const openClineInNewTab = async ({ context, outputChannel }: Omit<RegisterCommandOptions, "provider">) => {

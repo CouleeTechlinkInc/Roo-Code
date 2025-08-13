@@ -174,6 +174,26 @@
 				"command": "roo-cline.acceptInput",
 				"title": "%command.acceptInput.title%",
 				"category": "%configuration.title%"
+			},
+			{
+				"command": "roo-cline.openaiSignInChatGPT",
+				"title": "Sign in with ChatGPT (Plus/Pro)",
+				"category": "OpenAI"
+			},
+			{
+				"command": "roo-cline.openaiSignOutChatGPT",
+				"title": "Sign out of ChatGPT",
+				"category": "OpenAI"
+			},
+			{
+				"command": "roo-cline.openaiRefreshCredentials",
+				"title": "Refresh ChatGPT credentials",
+				"category": "OpenAI"
+			},
+			{
+				"command": "roo-cline.openaiImportFromCodex",
+				"title": "Import OpenAI credentials from Codex CLI",
+				"category": "OpenAI"
 			}
 		],
 		"menus": {

@@ -816,5 +816,34 @@
 	"includeMaxOutputTokensDescription": "Send max output tokens parameter in API requests. Some providers may not support this.",
 	"limitMaxTokensDescription": "Limit the maximum number of tokens in the response",
 	"maxOutputTokensLabel": "Max output tokens",
-	"maxTokensGenerateDescription": "Maximum tokens to generate in response"
+	"maxTokensGenerateDescription": "Maximum tokens to generate in response",
+	"openaiAuth": {
+		"authMode": {
+			"label": "Authentication Method",
+			"description": "Choose how to authenticate with OpenAI",
+			"apiKey": "API Key",
+			"chatgpt": "ChatGPT (Plus/Pro)"
+		},
+		"chatgptAuth": {
+			"signInButton": "Sign in with ChatGPT (Plus/Pro)",
+			"signOutButton": "Sign Out",
+			"refreshButton": "Refresh Credentials",
+			"importFromCodexButton": "Import from Codex CLI",
+			"signingInButton": "Signing In...",
+			"refreshingButton": "Refreshing...",
+			"signOutConfirmTitle": "Sign Out Confirmation",
+			"signOutConfirmMessage": "Are you sure you want to sign out? This will remove your stored credentials.",
+			"signOutConfirmButton": "Sign Out",
+			"statusAuthenticated": "Signed in with ChatGPT",
+			"statusNotAuthenticated": "Not signed in",
+			"userInfo": "Signed in as {{email}}",
+			"lastRefresh": "Last refreshed: {{date}}",
+			"authError": "Authentication error: {{error}}",
+			"authSuccess": "Successfully signed in with ChatGPT",
+			"signOutSuccess": "Successfully signed out",
+			"refreshSuccess": "Credentials refreshed successfully",
+			"importSuccess": "Successfully imported credentials from Codex CLI",
+			"description": "Sign in with your ChatGPT Plus or Pro account to use OpenAI models without managing API keys. Your credentials will be securely stored and automatically refreshed."
+		}
+	}
 }

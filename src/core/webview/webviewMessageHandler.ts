@@ -2611,5 +2611,71 @@ export const webviewMessageHandler = async (
 			}
 			break
 		}
+
+		case "requestOpenAIChatGptStatus": {
+			try {
+				// Check SecretStorage for ChatGPT authentication tokens
+				const idToken = await provider.context.secrets.get("roo.openai.chatgpt.idToken")
+				const apiKey = await provider.context.secrets.get("roo.openai.chatgpt.apiKey")
+				const refreshToken = await provider.context.secrets.get("roo.openai.chatgpt.refreshToken")
+				const lastRefresh = await provider.context.secrets.get("roo.openai.chatgpt.lastRefreshIso")
+
+				let userEmail: string | undefined
+				let userName: string | undefined
+				let authenticated = false
+
+				if (idToken && apiKey) {
+					authenticated = true
+					try {
+						// Parse JWT to extract user info
+						const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString())
+						userEmail = payload.email
+						userName = payload.name
+					} catch (error) {
+						provider.log(`Error parsing JWT token: ${error}`)
+					}
+				}
+
+				await provider.postMessageToWebview({
+					type: "openAiChatGptStatus",
+					openAiChatGptStatus: {
+						authenticated,
+						userEmail,
+						userName,
+						lastRefresh,
+					},
+				})
+			} catch (error) {
+				provider.log(`Error getting ChatGPT status: ${error}`)
+				await provider.postMessageToWebview({
+					type: "openAiChatGptStatus",
+					openAiChatGptStatus: {
+						authenticated: false,
+						error: "Failed to check authentication status",
+					},
+				})
+			}
+			break
+		}
+
+		case "openaiSignInChatGPT": {
+			await provider.handleOpenAISignIn()
+			break
+		}
+
+		case "openaiSignOutChatGPT": {
+			await provider.handleOpenAISignOut()
+			break
+		}
+
+		case "openaiRefreshCredentials": {
+			await provider.handleOpenAIRefresh()
+			break
+		}
+
+		case "openaiImportFromCodex": {
+			await provider.handleCodexImport()
+			break
+		}
 	}
 }

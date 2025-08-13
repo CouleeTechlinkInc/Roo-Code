@@ -211,6 +211,11 @@ export interface WebviewMessage {
 		| "deleteCommand"
 		| "createCommand"
 		| "insertTextIntoTextarea"
+		| "requestOpenAIChatGptStatus"
+		| "openaiSignInChatGPT"
+		| "openaiSignOutChatGPT"
+		| "openaiRefreshCredentials"
+		| "openaiImportFromCodex"
 	text?: string
 	editedMessageContent?: string
 	tab?: "settings" | "history" | "mcp" | "modes" | "chat" | "marketplace" | "account"

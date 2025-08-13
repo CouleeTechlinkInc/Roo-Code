@@ -229,6 +229,7 @@ export const isGlobalStateKey = (key: string): key is Keys<GlobalState> =>
 export const EVALS_SETTINGS: RooCodeSettings = {
 	apiProvider: "openrouter",
 	openRouterUseMiddleOutTransform: false,
+	openAiAuthMode: "apiKey",
 
 	lastShownAnnouncementId: "jul-09-2025-3-23-0",
 

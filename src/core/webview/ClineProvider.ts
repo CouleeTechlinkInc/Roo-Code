@@ -1372,6 +1372,296 @@ export class ClineProvider
 		await this.upsertProviderProfile(currentApiConfigName, newConfiguration)
 	}
 
+	// OpenAI ChatGPT OAuth handlers
+
+	async handleOpenAISignIn(): Promise<void> {
+		try {
+			const { generatePKCEChallenge, generateState } = await import("../../utils/oauth/pkce")
+			const { OAuthServer } = await import("../../utils/oauth/server")
+			const { OpenAIAuth } = await import("../../api/providers/openai-auth")
+
+			// Generate PKCE challenge and state
+			const challenge = generatePKCEChallenge()
+			const state = generateState()
+
+			// Start local server
+			const server = new OAuthServer({ port: 1455 })
+			const port = await server.start()
+
+			// Build auth URL and open browser
+			const authUrl = OpenAIAuth.buildAuthUrl(challenge, state, port)
+			await vscode.env.openExternal(vscode.Uri.parse(authUrl))
+
+			// Wait for callback
+			const callback = await new Promise<any>((resolve, reject) => {
+				server.on("callback", resolve)
+				server.on("timeout", () => reject(new Error("Authentication timeout - please try again")))
+			})
+
+			// Validate state
+			if (callback.state !== state) {
+				throw new Error("Invalid OAuth state - possible CSRF attack. Please try again.")
+			}
+
+			if (callback.error) {
+				throw new Error(`OAuth error: ${callback.error_description || callback.error}`)
+			}
+
+			if (!callback.code) {
+				throw new Error("No authorization code received from OpenAI")
+			}
+
+			// Exchange code for tokens
+			const tokens = await OpenAIAuth.exchangeCodeForTokens(
+				callback.code,
+				challenge.codeVerifier,
+				`http://localhost:${port}/auth/callback`,
+			)
+
+			// Exchange ID token for API key
+			const apiKey = await OpenAIAuth.exchangeTokenForApiKey(tokens.id_token)
+
+			// Store in SecretStorage
+			await this.context.secrets.store("roo.openai.chatgpt.apiKey", apiKey)
+			await this.context.secrets.store("roo.openai.chatgpt.idToken", tokens.id_token)
+			await this.context.secrets.store("roo.openai.chatgpt.refreshToken", tokens.refresh_token)
+			await this.context.secrets.store("roo.openai.chatgpt.lastRefreshIso", new Date().toISOString())
+
+			// Switch to chatgpt auth mode
+			const { apiConfiguration, currentApiConfigName } = await this.getState()
+			const newConfiguration: ProviderSettings = {
+				...apiConfiguration,
+				openAiAuthMode: "chatgpt",
+			}
+
+			await this.upsertProviderProfile(currentApiConfigName, newConfiguration)
+
+			// Best-effort credit redemption
+			await OpenAIAuth.redeemCredits(tokens.id_token)
+
+			// Update UI
+			this.postMessageToWebview({
+				type: "openAiChatGptAuthSuccess",
+			})
+
+			vscode.window.showInformationMessage("Successfully signed in with ChatGPT! You can now use OpenAI models.")
+		} catch (error) {
+			this.log(`OpenAI sign-in failed: ${error instanceof Error ? error.message : "Unknown error"}`)
+
+			// Update UI with error state
+			this.postMessageToWebview({
+				type: "openAiChatGptStatus",
+				payload: {
+					authenticated: false,
+					error: error instanceof Error ? error.message : "Unknown error"
+				}
+			})
+
+			// Show user-friendly error with actionable guidance
+			const errorMessage = error instanceof Error ? error.message : "Unknown error"
+			if (errorMessage.includes("Platform onboarding")) {
+				const action = await vscode.window.showErrorMessage(
+					"OpenAI sign-in succeeded but API access is not enabled. You need to complete Platform setup to use API features.",
+					"Open Platform Setup"
+				)
+				if (action === "Open Platform Setup") {
+					vscode.env.openExternal(vscode.Uri.parse("https://platform.openai.com/"))
+				}
+			} else {
+				vscode.window.showErrorMessage(`OpenAI sign-in failed: ${errorMessage}`)
+			}
+		}
+	}
+
+	async handleOpenAISignOut(): Promise<void> {
+		try {
+			// Clear all ChatGPT auth secrets
+			await this.context.secrets.delete("roo.openai.chatgpt.apiKey")
+			await this.context.secrets.delete("roo.openai.chatgpt.idToken")
+			await this.context.secrets.delete("roo.openai.chatgpt.refreshToken")
+			await this.context.secrets.delete("roo.openai.chatgpt.lastRefreshIso")
+
+			// Switch back to API key mode
+			const { apiConfiguration, currentApiConfigName } = await this.getState()
+			const newConfiguration: ProviderSettings = {
+				...apiConfiguration,
+				openAiAuthMode: "apiKey",
+			}
+
+			await this.upsertProviderProfile(currentApiConfigName, newConfiguration)
+
+			// Update UI
+			this.postMessageToWebview({
+				type: "openAiChatGptSignOutSuccess",
+			})
+
+			vscode.window.showInformationMessage("Signed out of ChatGPT successfully")
+		} catch (error) {
+			this.log(`OpenAI sign-out failed: ${error instanceof Error ? error.message : "Unknown error"}`)
+			vscode.window.showErrorMessage("Failed to sign out of ChatGPT")
+		}
+	}
+
+	async handleOpenAIRefresh(): Promise<void> {
+		try {
+			const refreshToken = await this.context.secrets.get("roo.openai.chatgpt.refreshToken")
+			if (!refreshToken) {
+				throw new Error("No refresh token available - please sign in again")
+			}
+
+			const { OpenAIAuth } = await import("../../api/providers/openai-auth")
+
+			// Refresh tokens
+			const tokens = await OpenAIAuth.refreshTokens(refreshToken)
+
+			// Exchange new ID token for API key
+			const apiKey = await OpenAIAuth.exchangeTokenForApiKey(tokens.id_token)
+
+			// Update SecretStorage
+			await this.context.secrets.store("roo.openai.chatgpt.apiKey", apiKey)
+			await this.context.secrets.store("roo.openai.chatgpt.idToken", tokens.id_token)
+			await this.context.secrets.store("roo.openai.chatgpt.refreshToken", tokens.refresh_token)
+			await this.context.secrets.store("roo.openai.chatgpt.lastRefreshIso", new Date().toISOString())
+
+			vscode.window.showInformationMessage("OpenAI credentials refreshed successfully")
+		} catch (error) {
+			this.log(`OpenAI refresh failed: ${error instanceof Error ? error.message : "Unknown error"}`)
+			vscode.window.showErrorMessage(
+				`Failed to refresh OpenAI credentials: ${error instanceof Error ? error.message : "Unknown error"}`,
+			)
+		}
+	}
+
+	async handleCodexImport(): Promise<void> {
+		try {
+			// Offer both file import and paste import
+			const importMethod = await vscode.window.showQuickPick(
+				[
+					{ label: "Import from file", value: "file", description: "Read from ~/.codex/auth.json" },
+					{ label: "Paste auth.json content", value: "paste", description: "Paste the content directly" },
+				],
+				{
+					placeHolder: "How would you like to import Codex CLI credentials?",
+					ignoreFocusOut: true,
+				},
+			)
+
+			if (!importMethod) return
+
+			let authData: any
+
+			if (importMethod.value === "file") {
+				authData = await this.importFromCodexFile()
+			} else {
+				authData = await this.importFromCodexPaste()
+			}
+
+			if (authData) {
+				await this.processCodexImport(authData)
+			}
+		} catch (error) {
+			this.log(`Codex import failed: ${error instanceof Error ? error.message : "Unknown error"}`)
+			vscode.window.showErrorMessage(
+				`Codex import failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+			)
+		}
+	}
+
+	private async importFromCodexFile(): Promise<any> {
+		const codexPath = path.join(os.homedir(), ".codex", "auth.json")
+
+		try {
+			const content = await fs.readFile(codexPath, "utf8")
+			return JSON.parse(content)
+		} catch (error: any) {
+			if (error.code === "ENOENT") {
+				throw new Error("Codex auth.json not found at ~/.codex/auth.json")
+			}
+			throw new Error("Failed to read Codex auth.json file")
+		}
+	}
+
+	private async importFromCodexPaste(): Promise<any> {
+		const content = await vscode.window.showInputBox({
+			prompt: "Paste the contents of your Codex auth.json file",
+			placeHolder: '{ "OPENAI_API_KEY": "sk-...", "tokens": { ... } }',
+			ignoreFocusOut: true,
+			validateInput: (value) => {
+				if (!value.trim()) return null
+
+				try {
+					JSON.parse(value)
+					return null
+				} catch {
+					return "Invalid JSON format"
+				}
+			},
+		})
+
+		if (!content) return null
+
+		try {
+			return JSON.parse(content)
+		} catch {
+			throw new Error("Invalid JSON content")
+		}
+	}
+
+	private async processCodexImport(authData: any): Promise<void> {
+		// Validate structure
+		if (!authData.OPENAI_API_KEY && !authData.tokens?.id_token) {
+			throw new Error("Invalid auth.json: missing OPENAI_API_KEY or tokens.id_token")
+		}
+
+		// Show sanitized preview
+		const preview = {
+			OPENAI_API_KEY: authData.OPENAI_API_KEY
+				? `${authData.OPENAI_API_KEY.slice(0, 7)}...${authData.OPENAI_API_KEY.slice(-4)}`
+				: "not present",
+			"tokens.id_token": authData.tokens?.id_token
+				? `${authData.tokens.id_token.slice(0, 20)}...`
+				: "not present",
+			"tokens.refresh_token": authData.tokens?.refresh_token ? "present" : "not present",
+			"tokens.access_token": authData.tokens?.access_token ? "present" : "not present",
+		}
+
+		const confirm = await vscode.window.showInformationMessage(
+			`Import the following credentials?\n\n${JSON.stringify(preview, null, 2)}`,
+			{ modal: true },
+			"Import",
+			"Cancel",
+		)
+
+		if (confirm !== "Import") return
+
+		// Store credentials
+		if (authData.OPENAI_API_KEY) {
+			await this.context.secrets.store("roo.openai.chatgpt.apiKey", authData.OPENAI_API_KEY)
+		}
+
+		if (authData.tokens?.id_token) {
+			await this.context.secrets.store("roo.openai.chatgpt.idToken", authData.tokens.id_token)
+		}
+
+		if (authData.tokens?.refresh_token) {
+			await this.context.secrets.store("roo.openai.chatgpt.refreshToken", authData.tokens.refresh_token)
+		}
+
+		await this.context.secrets.store("roo.openai.chatgpt.lastRefreshIso", new Date().toISOString())
+
+		// Switch to ChatGPT auth mode
+		const { apiConfiguration, currentApiConfigName } = await this.getState()
+		const newConfiguration: ProviderSettings = {
+			...apiConfiguration,
+			apiProvider: "openai",
+			openAiAuthMode: "chatgpt",
+		}
+
+		await this.upsertProviderProfile(currentApiConfigName, newConfiguration)
+
+		vscode.window.showInformationMessage("Codex CLI credentials imported successfully")
+	}
+
 	// Task history
 
 	async getTaskWithId(id: string): Promise<{

@@ -53,6 +53,12 @@ export const commandIds = [
 	"focusInput",
 	"acceptInput",
 	"focusPanel",
+
+	// OpenAI ChatGPT authentication commands
+	"openaiSignInChatGPT",
+	"openaiSignOutChatGPT",
+	"openaiRefreshCredentials",
+	"openaiImportFromCodex",
 ] as const
 
 export type CommandId = (typeof commandIds)[number]
